@@ -178,12 +178,14 @@ public class DrawingView extends View {
 	static final int MODE_CAMERA_MANIPULATION = 1; // the user is panning/zooming the camera
 	static final int MODE_SHAPE_MANIPULATION = 2; // the user is translating/rotating/scaling a shape
 	static final int MODE_LASSO = 3; // the user is drawing a lasso to select shapes
+	static final int MODE_DELETE = 4; // the user is trying to delete a shape
 	int currentMode = MODE_NEUTRAL;
 
 	// This is only used when currentMode==MODE_SHAPE_MANIPULATION, otherwise it is equal to -1
 	int indexOfShapeBeingManipulated = -1;
 
 	MyButton lassoButton = new MyButton( "Lasso", 10, 70, 140, 140 );
+	MyButton deleteButton = new MyButton( "Effacer", 10, 240, 140, 140);
 	
 	OnTouchListener touchListener;
 	
@@ -261,6 +263,16 @@ public class DrawingView extends View {
 			if ( lassoCursor != null ) {
 				gw.setColor(1.0f,0.0f,0.0f,0.5f);
 				gw.fillPolygon( lassoCursor.getPositions() );
+			}
+		}
+		
+		deleteButton.draw( gw, currentMode == MODE_DELETE );
+
+		if ( currentMode == MODE_DELETE ) {
+			MyCursor deleteCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
+			if ( deleteCursor != null ) {
+				gw.setColor(1.0f,0.0f,0.0f,0.5f);
+				gw.fillPolygon( deleteCursor.getPositions() );
 			}
 		}
 
@@ -350,6 +362,10 @@ public class DrawingView extends View {
 								currentMode = MODE_LASSO;
 								cursor.setType( MyCursor.TYPE_BUTTON );
 							}
+							else if ( deleteButton.contains(p_pixels) ) {
+								currentMode = MODE_DELETE;
+								cursor.setType( MyCursor.TYPE_BUTTON);
+							}
 							else if ( indexOfShapeBeingManipulated >= 0 ) {
 								currentMode = MODE_SHAPE_MANIPULATION;
 								cursor.setType( MyCursor.TYPE_DRAGGING );
@@ -379,22 +395,19 @@ public class DrawingView extends View {
 						}
 						break;
 					case MODE_SHAPE_MANIPULATION :
-						if(cursorContainer.getNumCursors() == 1  && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0)
-						{
-							MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
-							for(Shape shape : selectedShapes)
-							{
-								Point2DUtil.translatePointsBasedOnDisplacementOfOnePoint(
-										shape.getPoints(), 
-										gw.convertPixelsToWorldSpaceUnits( cursor0.getPreviousPosition()), 
-										gw.convertPixelsToWorldSpaceUnits( cursor0.getCurrentPosition())
-										);
-							}
-						}
+                        if(cursorContainer.getNumCursors() == 1  && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0)
+                        {
+                            MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
+                            for(Shape shape : selectedShapes)
+                            {
+                                Point2DUtil.translatePointsBasedOnDisplacementOfOnePoint(shape.getPoints(), gw.convertPixelsToWorldSpaceUnits( cursor0.getPreviousPosition()), gw.convertPixelsToWorldSpaceUnits( cursor0.getCurrentPosition()));
+                            }
+                        }
 						else if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0 ) {
 							MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
 							MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
 							Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+
 							Point2DUtil.transformPointsBasedOnDisplacementOfTwoPoints(
 								shape.getPoints(),
 								gw.convertPixelsToWorldSpaceUnits( cursor0.getPreviousPosition() ),
@@ -445,8 +458,23 @@ public class DrawingView extends View {
 							}
 						}
 						break;
+					case MODE_DELETE :
+						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_DOWN ) {
+							Point2D p_pixels = new Point2D(x,y);
+							Point2D p_world = gw.convertPixelsToWorldSpaceUnits( p_pixels );
+							indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( p_world );
+							if(indexOfShapeBeingManipulated >= 0) {
+								Shape shape = shapeContainer.shapes.remove( indexOfShapeBeingManipulated );
+							}
+						}
+						else if ( type == MotionEvent.ACTION_UP ) {
+							cursorContainer.removeCursorByIndex( cursorIndex );
+							if ( cursorContainer.getNumCursors() == 0 ) {
+								currentMode = MODE_NEUTRAL;
+							}
+						}
 					}
-					
+						
 					v.invalidate();
 					
 					return true;
