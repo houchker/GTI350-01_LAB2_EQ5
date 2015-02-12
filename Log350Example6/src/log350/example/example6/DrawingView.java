@@ -496,11 +496,12 @@ public class DrawingView extends View {
 							} else {
 								MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
 								indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( cursor1.getCurrentPosition() );
-								Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
-								shapeContainer.shapes.remove( shape );
-								//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
-								indexOfShapeBeingManipulated = -1;
-					
+								if ( indexOfShapeBeingManipulated != -1) {
+									Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+									shapeContainer.shapes.remove( shape );
+									//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
+									indexOfShapeBeingManipulated = -1;
+								}
 							}
 							
 						}
