@@ -4,6 +4,8 @@ package log350.example.example6;
 import java.util.ArrayList;
 //import java.util.List;
 
+import java.util.List;
+
 import android.content.Context;
 //import android.graphics.Matrix;
 import android.graphics.Canvas;
@@ -13,6 +15,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 
 
@@ -47,6 +50,7 @@ class MyCursor {
 	public static final int TYPE_BUTTON = 1; // the finger is pressing a virtual button
 	public static final int TYPE_IGNORE = 2; // the finger should not be there and will be ignored
 	public int type = TYPE_IGNORE;
+	public int maxCursors=0;
 
 
 
@@ -119,6 +123,10 @@ class CursorContainer {
 				num ++;
 		}
 		return num;
+	}
+	public void removeAllCursors()
+	{
+		cursors.clear();
 	}
 
 	// Returns the (i)th cursor of the given type,
@@ -305,6 +313,8 @@ public class DrawingView extends View {
 		if ( touchListener == null ) {
 			touchListener = new OnTouchListener() {
 				
+				private int currentCursosNumber;
+
 				public boolean onTouch(View v, MotionEvent event) {
 
 					int type = MotionEvent.ACTION_MOVE;
@@ -490,6 +500,7 @@ public class DrawingView extends View {
 								shapeContainer.shapes.remove( shape );
 								//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
 								indexOfShapeBeingManipulated = -1;
+					
 							}
 							
 						}
@@ -503,19 +514,36 @@ public class DrawingView extends View {
 					case MODE_CREATE :
 						if ( cursorContainer.getNumCursors() >= 3 && type == MotionEvent.ACTION_DOWN ) {
 							//Do something... (Francisco et Charles)
-							
+						
 							// Selon l'énoncée du lab...
 							
 							/* Conseil: au lieu de créer le nouveau polygone à partir des positions brutes des doigts
 							 * (qui peuvent vous arriver dans n'importe quel ordre), utilisez Point2DUtil.computeConvexHull()
 							 * pour calculer un enveloppe convexe des doigts, et utilisez cet enveloppe convexe pour créer le nouveau polygone
 							 */
+							currentCursosNumber=cursorContainer.getNumCursors();
 						}
-						else if ( type == MotionEvent.ACTION_UP ) {
-							cursorContainer.removeCursorByIndex( cursorIndex );
-							if ( cursorContainer.getNumCursors() == 0 ) {
+						else if ( type == MotionEvent.ACTION_UP  ) {
+							if(cursorContainer.getNumCursors()>2)
+							{
+								ArrayList<Point2D> pts=new ArrayList<Point2D>();
+								for (int i = 1; i < cursorContainer.getNumCursors() ; i++) {
+									pts.addAll(cursorContainer.getCursorByIndex( i ).getPositions());	
+								}	
+								ArrayList<Point2D> shapePts=Point2DUtil.computeConvexHull(pts);
+								shapeContainer.addShape( shapePts );
+								cursorContainer.removeAllCursors();
 								currentMode = MODE_NEUTRAL;
+								
 							}
+							else
+							{
+								cursorContainer.removeCursorByIndex( cursorIndex );
+								if ( cursorContainer.getNumCursors() == 0 ) {
+									currentMode = MODE_NEUTRAL;
+								}
+							}
+							break;
 						}
 						break;
 					}
