@@ -397,6 +397,22 @@ public class Point2DUtil {
 			p.get()[1] = (sine*relativeX + cosine*relativeY) + translation.y() + centroid.y();
 		}
 	}
+	
+	static public void translatePointsBasedOnDisplacementOfOnePoint(
+			ArrayList<Point2D> points,
+			// these should, of course, be in the same coordinate system as the points to transform
+			Point2D P_old,
+			Point2D P_new
+		) {
+			float translateX = P_new.get()[0] - P_old.get()[0];
+			float translateY = P_new.get()[1] - P_old.get()[1];
+			//Vector2D translation = Point2D.diff( P_old, P_new );
+
+			for ( Point2D p : points ) {
+				p.get()[0] = p.get()[0] + translateX;
+				p.get()[1] = p.get()[1] + translateY;
+			}
+		}
 
 	// This can be used to implement bimanual (2-handed) manipulation,
 	// or 2-finger manipulation, as in a "pinch" gesture

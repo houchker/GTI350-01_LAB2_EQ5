@@ -178,12 +178,16 @@ public class DrawingView extends View {
 	static final int MODE_CAMERA_MANIPULATION = 1; // the user is panning/zooming the camera
 	static final int MODE_SHAPE_MANIPULATION = 2; // the user is translating/rotating/scaling a shape
 	static final int MODE_LASSO = 3; // the user is drawing a lasso to select shapes
+	static final int MODE_DELETE = 4; // the user is trying to delete a shape
+	static final int MODE_CREATE = 5; // the user is creating a shape
 	int currentMode = MODE_NEUTRAL;
 
 	// This is only used when currentMode==MODE_SHAPE_MANIPULATION, otherwise it is equal to -1
 	int indexOfShapeBeingManipulated = -1;
 
 	MyButton lassoButton = new MyButton( "Lasso", 10, 70, 140, 140 );
+	MyButton deleteButton = new MyButton( "Effacer", 10, 240, 140, 140);
+	MyButton createButton = new MyButton( "Créer", 10, 410, 140, 140);
 	
 	OnTouchListener touchListener;
 	
@@ -261,6 +265,26 @@ public class DrawingView extends View {
 			if ( lassoCursor != null ) {
 				gw.setColor(1.0f,0.0f,0.0f,0.5f);
 				gw.fillPolygon( lassoCursor.getPositions() );
+			}
+		}
+		
+		deleteButton.draw( gw, currentMode == MODE_DELETE );
+
+		if ( currentMode == MODE_DELETE ) {
+			MyCursor deleteCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
+			if ( deleteCursor != null ) {
+				gw.setColor(1.0f,0.0f,0.0f,0.5f);
+				gw.fillPolygon( deleteCursor.getPositions() );
+			}
+		}
+		
+		createButton.draw( gw, currentMode == MODE_CREATE );
+
+		if ( currentMode == MODE_CREATE ) {
+			MyCursor createCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
+			if ( createCursor != null ) {
+				gw.setColor(1.0f,0.0f,0.0f,0.5f);
+				gw.fillPolygon( createCursor.getPositions() );
 			}
 		}
 
@@ -350,6 +374,14 @@ public class DrawingView extends View {
 								currentMode = MODE_LASSO;
 								cursor.setType( MyCursor.TYPE_BUTTON );
 							}
+							else if ( deleteButton.contains(p_pixels) ) {
+								currentMode = MODE_DELETE;
+								cursor.setType( MyCursor.TYPE_BUTTON);
+							}
+							else if ( createButton.contains(p_pixels) ) {
+								currentMode = MODE_CREATE;
+								cursor.setType( MyCursor.TYPE_BUTTON);
+							}
 							else if ( indexOfShapeBeingManipulated >= 0 ) {
 								currentMode = MODE_SHAPE_MANIPULATION;
 								cursor.setType( MyCursor.TYPE_DRAGGING );
@@ -379,7 +411,15 @@ public class DrawingView extends View {
 						}
 						break;
 					case MODE_SHAPE_MANIPULATION :
-						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0 ) {
+                        if(cursorContainer.getNumCursors() == 1  && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0)
+                        {
+                            MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
+                            for(Shape shape : selectedShapes)
+                            {
+                                Point2DUtil.translatePointsBasedOnDisplacementOfOnePoint(shape.getPoints(), gw.convertPixelsToWorldSpaceUnits( cursor0.getPreviousPosition()), gw.convertPixelsToWorldSpaceUnits( cursor0.getCurrentPosition()));
+                            }
+                        }
+						else if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0 ) {
 							MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
 							MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
 							Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
@@ -434,8 +474,52 @@ public class DrawingView extends View {
 							}
 						}
 						break;
+					case MODE_DELETE :
+						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_DOWN ) {
+							//S'il y a des formes dans un lasso, on les supprime tous
+							if(selectedShapes.size() != 0) {
+								for(Shape shape : selectedShapes) {
+									shapeContainer.shapes.remove( shape );
+								}
+								selectedShapes.clear();
+							//Sinon on supprime seulement la forme sélectionnée
+							} else {
+								MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
+								indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( cursor1.getCurrentPosition() );
+								Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+								shapeContainer.shapes.remove( shape );
+								//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
+								indexOfShapeBeingManipulated = -1;
+							}
+							
+						}
+						else if ( type == MotionEvent.ACTION_UP ) {
+							cursorContainer.removeCursorByIndex( cursorIndex );
+							if ( cursorContainer.getNumCursors() == 0 ) {
+								currentMode = MODE_NEUTRAL;
+							}
+						}
+						break;
+					case MODE_CREATE :
+						if ( cursorContainer.getNumCursors() >= 3 && type == MotionEvent.ACTION_DOWN ) {
+							//Do something... (Francisco et Charles)
+							
+							// Selon l'énoncée du lab...
+							
+							/* Conseil: au lieu de créer le nouveau polygone à partir des positions brutes des doigts
+							 * (qui peuvent vous arriver dans n'importe quel ordre), utilisez Point2DUtil.computeConvexHull()
+							 * pour calculer un enveloppe convexe des doigts, et utilisez cet enveloppe convexe pour créer le nouveau polygone
+							 */
+						}
+						else if ( type == MotionEvent.ACTION_UP ) {
+							cursorContainer.removeCursorByIndex( cursorIndex );
+							if ( cursorContainer.getNumCursors() == 0 ) {
+								currentMode = MODE_NEUTRAL;
+							}
+						}
+						break;
 					}
-					
+						
 					v.invalidate();
 					
 					return true;
