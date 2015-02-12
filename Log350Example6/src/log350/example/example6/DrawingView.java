@@ -460,12 +460,22 @@ public class DrawingView extends View {
 						break;
 					case MODE_DELETE :
 						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_DOWN ) {
-							Point2D p_pixels = new Point2D(x,y);
-							Point2D p_world = gw.convertPixelsToWorldSpaceUnits( p_pixels );
-							indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( p_world );
-							if(indexOfShapeBeingManipulated >= 0) {
-								Shape shape = shapeContainer.shapes.remove( indexOfShapeBeingManipulated );
+							//S'il y a des formes dans un lasso, on les supprimes tous
+							if(selectedShapes.size() != 0) {
+								for(Shape shape : selectedShapes) {
+									shapeContainer.shapes.remove( shape );
+								}
+								selectedShapes.clear();
+							//Sinon on supprime seulement la forme sélectionnée
+							} else {
+								MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
+								indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( cursor1.getCurrentPosition() );
+								Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+								shapeContainer.shapes.remove( shape );
+								//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
+								indexOfShapeBeingManipulated = -1;
 							}
+							
 						}
 						else if ( type == MotionEvent.ACTION_UP ) {
 							cursorContainer.removeCursorByIndex( cursorIndex );
@@ -473,6 +483,7 @@ public class DrawingView extends View {
 								currentMode = MODE_NEUTRAL;
 							}
 						}
+						break;
 					}
 						
 					v.invalidate();
