@@ -486,24 +486,24 @@ public class DrawingView extends View {
 						break;
 					case MODE_DELETE :
 						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_DOWN ) {
-							//S'il y a des formes dans un lasso, on les supprime tous
-							if(selectedShapes.size() != 0) {
-								for(Shape shape : selectedShapes) {
-									shapeContainer.shapes.remove( shape );
-								}
-								selectedShapes.clear();
-							//Sinon on supprime seulement la forme sélectionnée
-							} else {
-								MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
-								indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( cursor1.getCurrentPosition() );
-								if ( indexOfShapeBeingManipulated != -1) {
-									Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+							MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
+							indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( cursor1.getCurrentPosition() );
+							//On vérifie que l'on essaie pas de supprimer le vide
+							if ( indexOfShapeBeingManipulated != -1) {
+								Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+								//S'il y a des formes dans un lasso, on les supprime tous
+								if( selectedShapes.size() != 0 && selectedShapes.contains(shape) ) {
+									for(Shape shapes : selectedShapes) {
+										shapeContainer.shapes.remove( shapes );
+									}
+									selectedShapes.clear();
+								//Sinon on supprime seulement la forme sélectionnée
+								} else {
 									shapeContainer.shapes.remove( shape );
 									//On remet la forme manipulée à -1 pour pas avoir de contour rouge sur une autre forme
 									indexOfShapeBeingManipulated = -1;
 								}
 							}
-							
 						}
 						else if ( type == MotionEvent.ACTION_UP ) {
 							cursorContainer.removeCursorByIndex( cursorIndex );
@@ -514,14 +514,6 @@ public class DrawingView extends View {
 						break;
 					case MODE_CREATE :
 						if ( cursorContainer.getNumCursors() >= 3 && type == MotionEvent.ACTION_DOWN ) {
-							//Do something... (Francisco et Charles)
-						
-							// Selon l'énoncée du lab...
-							
-							/* Conseil: au lieu de créer le nouveau polygone à partir des positions brutes des doigts
-							 * (qui peuvent vous arriver dans n'importe quel ordre), utilisez Point2DUtil.computeConvexHull()
-							 * pour calculer un enveloppe convexe des doigts, et utilisez cet enveloppe convexe pour créer le nouveau polygone
-							 */
 							currentCursosNumber=cursorContainer.getNumCursors();
 						}
 						else if ( type == MotionEvent.ACTION_UP  ) {
