@@ -517,7 +517,7 @@ public class DrawingView extends View {
 							currentCursosNumber=cursorContainer.getNumCursors();
 						}
 						else if ( type == MotionEvent.ACTION_UP  ) {
-							if(cursorContainer.getNumCursors()>2)
+							if(cursorContainer.getNumCursors()>3)
 							{
 								ArrayList<Point2D> pts=new ArrayList<Point2D>();
 								for (int i = 1; i < cursorContainer.getNumCursors() ; i++) {
